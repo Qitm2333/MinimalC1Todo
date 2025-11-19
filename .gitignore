@@ -1,0 +1,30 @@
+# 用户数据
+*.db
+*.json
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 依赖
+node_modules/
+
+# 打包文件
+*.zip
+*.rar
+*.7z
+
+# 日志
+*.log
+npm-debug.log*
+
+# 临时文件
+*.tmp
+*~

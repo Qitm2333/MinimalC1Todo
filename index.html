@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简待办 - MinimalTodo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- C1调试面板切换按钮 -->
+        <button class="debug-panel-toggle" id="debug-panel-toggle" title="切换3D调试面板">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+        </button>
+        
+        <!-- C1模式切换按钮 -->
+        <button class="c1-toggle" id="c1-toggle" title="切换C1显示模式">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <path d="M9 9h6v6H9z"></path>
+                <text x="12" y="13" text-anchor="middle" font-size="6" fill="currentColor" font-weight="bold">C1</text>
+            </svg>
+        </button>
+        
+        <!-- 暗黑模式切换按钮 -->
+        <button class="theme-toggle" id="theme-toggle" title="切换暗黑模式">
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </button>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <button class="collapse-btn" id="collapse-btn" title="收起任务列表">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+            <header class="header">
+                <div class="header-title">
+                    <h2 id="current-filter-title">任务列表</h2>
+                    <p class="header-subtitle" id="current-date"></p>
+                </div>
+            </header>
+
+            <!-- 添加任务 -->
+            <div class="add-task-section">
+                <div class="add-task-input">
+                    <input type="text" id="task-input" placeholder="添加新任务...">
+                    <div class="add-task-options">
+                        <select id="priority-select">
+                            <option value="low">普通</option>
+                            <option value="medium">中等</option>
+                            <option value="high">重要</option>
+                        </select>
+                        <div class="color-picker">
+                            <div class="color-option" data-color="#2563eb" style="background: #2563eb;" title="蓝色"></div>
+                            <div class="color-option" data-color="#10b981" style="background: #10b981;" title="绿色"></div>
+                            <div class="color-option" data-color="#f59e0b" style="background: #f59e0b;" title="橙色"></div>
+                            <div class="color-option" data-color="#ef4444" style="background: #ef4444;" title="红色"></div>
+                            <div class="color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="紫色"></div>
+                            <div class="color-option" data-color="#ec4899" style="background: #ec4899;" title="粉色"></div>
+                        </div>
+                        <button id="add-task-btn" class="btn-primary">添加</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务列表 -->
+            <div class="tasks-container">
+                <div id="tasks-list" class="tasks-list">
+                    <!-- 任务卡片将通过 JS 动态生成 -->
+                </div>
+                <div id="empty-state" class="empty-state">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <p>暂无任务</p>
+                    <span class="empty-hint">添加一个新任务开始吧</span>
+                </div>
+            </div>
+
+            <!-- 专注页面（覆盖整个main-content） -->
+            <div class="focus-page" id="focus-page">
+            <div class="focus-glow-bg"></div>
+            
+            <!-- C1 3D Canvas（仅在 C1 模式下显示） -->
+            <canvas id="c1-canvas" class="c1-canvas"></canvas>
+            
+            <button class="focus-back-btn" id="focus-back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                返回
+            </button>
+            <div class="focus-content">
+                <h2 class="focus-task-name" id="focus-task-name">任务名称</h2>
+                <div class="focus-timer" id="focus-timer">00:00:00</div>
+                <div class="focus-controls">
+                    <button class="focus-btn focus-start" id="focus-start-btn">开始</button>
+                    <button class="focus-btn focus-pause" id="focus-pause-btn" style="display:none;">暂停</button>
+                    <button class="focus-btn focus-stop" id="focus-stop-btn">结束</button>
+                </div>
+            </div>
+        </div>
+        </main>
+
+        <!-- 可拖动分隔条 -->
+        <div class="resizer" id="resizer"></div>
+
+        <!-- 日历面板 -->
+        <aside class="calendar-panel">
+            <!-- 数据备份按钮 -->
+            <div class="backup-actions">
+                <button class="backup-btn" id="export-btn" title="导出数据">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    导出
+                </button>
+                <button class="backup-btn" id="import-btn" title="导入数据">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    导入
+                </button>
+            </div>
+            <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+            <!-- 今日专注统计 -->
+            <div class="focus-stats" id="focus-stats">
+                <h4 id="focus-stats-title">今日专注</h4>
+                <div class="focus-timeline" id="focus-timeline">
+                    <div class="timeline-empty">今天还没有专注记录</div>
+                </div>
+            </div>
+
+            <div class="calendar-header">
+                <button class="calendar-nav-btn" id="prev-month">‹</button>
+                <h3 id="calendar-month-year">2024年11月</h3>
+                <button class="calendar-nav-btn" id="next-month">›</button>
+            </div>
+            
+            <div class="calendar-weekdays">
+                <div class="weekday">日</div>
+                <div class="weekday">一</div>
+                <div class="weekday">二</div>
+                <div class="weekday">三</div>
+                <div class="weekday">四</div>
+                <div class="weekday">五</div>
+                <div class="weekday">六</div>
+            </div>
+            
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- 日历格子将通过 JS 动态生成 -->
+            </div>
+            
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <div class="legend-dot today"></div>
+                    <span>今天</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot has-tasks"></div>
+                    <span>有任务</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- C1 独立调试窗口（浮动在主屏幕上，脱离container） -->
+    <div class="c1-debug-window hidden" id="c1-debug-window">
+        <div class="debug-window-header">
+            <h4>🎮 3D 调试面板</h4>
+            <div class="debug-window-actions">
+                <button class="debug-save-btn" id="debug-save-btn" title="保存当前配置">💾 保存</button>
+                <button class="debug-close-btn" id="debug-close-btn" title="关闭">✕</button>
+            </div>
+        </div>
+        <div class="debug-window-body">
+            <!-- 流光圆盘位置 -->
+            <div class="debug-section">
+                <h5>流光圆盘 (X固定为0)</h5>
+                <div class="debug-control">
+                    <label>Y:</label>
+                    <input type="range" id="torus-y" min="-200" max="200" value="0" step="10">
+                    <span id="torus-y-value">0</span>
+                </div>
+                <div class="debug-control">
+                    <label>Z:</label>
+                    <input type="range" id="torus-z" min="-300" max="300" value="300" step="10">
+                    <span id="torus-z-value">300</span>
+                </div>
+                <div class="debug-control">
+                    <label>缩放:</label>
+                    <input type="range" id="disc-scale" min="0.1" max="3" value="1.6" step="0.1">
+                    <span id="disc-scale-value">1.6</span>
+                </div>
+            </div>
+            
+            <!-- 任务名 -->
+            <div class="debug-section">
+                <h5>任务名 (X固定为0)</h5>
+                <div class="debug-control">
+                    <label>Y:</label>
+                    <input type="range" id="taskname-y" min="-200" max="200" value="180" step="10">
+                    <span id="taskname-y-value">180</span>
+                </div>
+                <div class="debug-control">
+                    <label>Z:</label>
+                    <input type="range" id="taskname-z" min="-300" max="300" value="90" step="10">
+                    <span id="taskname-z-value">90</span>
+                </div>
+                <div class="debug-control">
+                    <label>缩放:</label>
+                    <input type="range" id="taskname-scale" min="0.1" max="3" value="0.7" step="0.1">
+                    <span id="taskname-scale-value">0.7</span>
+                </div>
+            </div>
+            
+            <!-- 计时器 -->
+            <div class="debug-section">
+                <h5>计时器 (X固定为0)</h5>
+                <div class="debug-control">
+                    <label>Y:</label>
+                    <input type="range" id="timer-y" min="-200" max="200" value="0" step="10">
+                    <span id="timer-y-value">0</span>
+                </div>
+                <div class="debug-control">
+                    <label>Z:</label>
+                    <input type="range" id="timer-z" min="-300" max="300" value="-110" step="10">
+                    <span id="timer-z-value">-110</span>
+                </div>
+                <div class="debug-control">
+                    <label>缩放:</label>
+                    <input type="range" id="timer-scale" min="0.1" max="3" value="1" step="0.1">
+                    <span id="timer-scale-value">1</span>
+                </div>
+            </div>
+            
+            <!-- 相机参数 -->
+            <div class="debug-section">
+                <h5>相机参数</h5>
+                <!-- 视角和距离已固定，不显示滑块 -->
+                <div class="debug-control">
+                    <label>中心:</label>
+                    <input type="range" id="center-offset" min="-1" max="1" value="-0.489" step="0.001">
+                    <span id="center-offset-value">-0.489</span>
+                </div>
+            </div>
+            
+            <!-- 提示信息 -->
+            <div class="debug-section">
+                <div class="debug-hint">
+                    💡 视角5°、距离650已固定（代码中）<br>
+                    💡 <strong>中心偏移</strong>：当前最佳值-0.489（可微调）<br>
+                    💡 Z轴：负值=出屏（凸出），正值=进屏（后退）
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑模态框 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑任务</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="edit-task-input" placeholder="任务内容">
+                <select id="edit-priority-select">
+                    <option value="low">普通</option>
+                    <option value="medium">中等</option>
+                    <option value="high">重要</option>
+                </select>
+                <div class="color-picker-modal">
+                    <label>标签颜色</label>
+                    <div class="color-picker">
+                        <div class="color-option" data-color="#2563eb" style="background: #2563eb;" title="蓝色"></div>
+                        <div class="color-option" data-color="#10b981" style="background: #10b981;" title="绿色"></div>
+                        <div class="color-option" data-color="#f59e0b" style="background: #f59e0b;" title="橙色"></div>
+                        <div class="color-option" data-color="#ef4444" style="background: #ef4444;" title="红色"></div>
+                        <div class="color-option" data-color="#8b5cf6" style="background: #8b5cf6;" title="紫色"></div>
+                        <div class="color-option" data-color="#ec4899" style="background: #ec4899;" title="粉色"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancel-edit-btn">取消</button>
+                <button class="btn-focus" id="start-focus-btn">开始专注</button>
+                <button class="btn-primary" id="save-edit-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义确认弹窗 -->
+    <div id="confirm-modal" class="confirm-modal">
+        <div class="confirm-modal-content">
+            <h3 id="confirm-title">确认</h3>
+            <p id="confirm-message">确定要执行此操作吗？</p>
+            <div class="confirm-modal-footer">
+                <button class="btn-secondary" id="confirm-cancel-btn">取消</button>
+                <button class="btn-primary" id="confirm-ok-btn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js for C1 3D Effects -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+    <script src="c1-renderer.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
