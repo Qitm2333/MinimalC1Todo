@@ -324,8 +324,20 @@
         </div>
     </div>
 
-    <!-- Three.js for C1 3D Effects -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+    <!-- Three.js for C1 3D Effects (try local first, then CDN) -->
+    <script src="lib/three.min.js" 
+            onerror="this.onerror=null; this.src='https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js'"></script>
+    <script>
+        // 检查Three.js是否加载成功
+        window.addEventListener('load', function() {
+            if (typeof THREE === 'undefined') {
+                console.error('❌ Three.js加载失败，C1 3D模式将无法使用');
+                alert('Three.js库加载失败，请检查网络连接。C1 3D模式将无法使用。');
+            } else {
+                console.log('✓ Three.js加载成功，版本:', THREE.REVISION);
+            }
+        });
+    </script>
     <script src="c1-renderer.js"></script>
     
     <script src="script.js"></script>

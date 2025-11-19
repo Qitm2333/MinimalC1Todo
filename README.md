@@ -68,7 +68,7 @@ npx serve
 ## 🛠️ 技术栈
 
 - **前端**: 纯 HTML/CSS/JavaScript (无框架依赖)
-- **3D渲染**: Three.js r149
+- **3D渲染**: Three.js r149 (已包含本地文件，无需网络)
 - **3D显示**: Looking Glass Companion C1 Lenticular Quilt 渲染
 - **存储**: localStorage API
 
@@ -80,7 +80,10 @@ MinimalC1Todo/
 ├── style.css           # 样式文件
 ├── script.js           # 主要逻辑
 ├── c1-renderer.js      # C1 3D渲染器
+├── lib/
+│   └── three.min.js    # Three.js 本地文件
 ├── .gitignore          # Git 忽略文件
+├── LICENSE             # MIT 开源协议
 └── README.md           # 项目说明
 ```
 
