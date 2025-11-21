@@ -122,7 +122,7 @@ class TodoApp {
             priority: priority,
             color: color || this.selectedColor,
             createdAt: new Date().toISOString(),
-            dueDate: null,
+            dueDates: [], // 支持多个日期
             isToday: true
         };
 
@@ -198,6 +198,13 @@ class TodoApp {
         return this.tasks;
     }
 
+    // 计算任务的总专注时长（秒）
+    getTaskTotalFocusTime(taskId) {
+        return this.focusRecords
+            .filter(record => record.taskId === taskId)
+            .reduce((total, record) => total + (record.duration || 0), 0);
+    }
+
     // 渲染任务列表
     renderTasks() {
         const tasksList = document.getElementById('tasks-list');
@@ -213,7 +220,21 @@ class TodoApp {
         emptyState.classList.remove('show');
         
         tasksList.innerHTML = filteredTasks.map(task => {
-            const dueDateText = task.dueDate ? ` · ${this.formatDueDate(task.dueDate)}` : '';
+            // 处理多个日期显示
+            const dueDates = task.dueDates || (task.dueDate ? [task.dueDate] : []); // 兼容旧数据
+            let dueDateText = '';
+            if (dueDates.length > 0) {
+                dueDateText = `${dueDates.length}个日期`;
+            }
+            
+            // 计算总专注时长
+            const totalFocusSeconds = this.getTaskTotalFocusTime(task.id);
+            const focusTimeText = totalFocusSeconds > 0 ? `已专注${this.formatDuration(totalFocusSeconds)}` : '';
+            
+            // 组合元数据，用 · 分隔
+            const metaParts = [dueDateText, focusTimeText].filter(text => text);
+            const metaText = metaParts.join(' · ');
+            
             const taskColor = task.color || '#2563eb';
             return `
             <div class="task-card ${task.completed ? 'completed' : ''}" 
@@ -224,7 +245,7 @@ class TodoApp {
                 <div class="priority-indicator ${task.priority}" style="background-color: ${taskColor};"></div>
                 <div class="task-content">
                     <div class="task-text">${this.escapeHtml(task.text)}</div>
-                    <div class="task-meta">${this.formatCreatedDate(task.createdAt)}${dueDateText}</div>
+                    ${metaText ? `<div class="task-meta">${metaText}</div>` : ''}
                 </div>
                 <div class="task-actions">
                     <button class="task-btn focus" onclick="app.startFocus('${task.id}')">专注</button>
@@ -534,15 +555,20 @@ class TodoApp {
         if (!isOtherMonth && date) {
             // 添加点击事件来选择日期
             dayElement.addEventListener('click', (e) => {
-                // 如果点击的是复选框或任务文本，不触发日期选择
+                // 如果点击的是复选框、任务文本或删除按钮，不触发日期选择
                 if (e.target.classList.contains('calendar-task-checkbox') || 
-                    e.target.classList.contains('calendar-task-text')) {
+                    e.target.classList.contains('calendar-task-text') ||
+                    e.target.classList.contains('calendar-task-remove')) {
                     return;
                 }
                 this.selectDate(date);
             });
             const dateStr = this.formatDateStr(date);
-            const tasksOnDate = this.tasks.filter(t => t.dueDate === dateStr);
+            // 支持多日期：检查任务的dueDates数组中是否包含当前日期
+            const tasksOnDate = this.tasks.filter(t => {
+                const dueDates = t.dueDates || (t.dueDate ? [t.dueDate] : []); // 兼容旧数据
+                return dueDates.includes(dateStr);
+            });
             
             // 创建任务列表容器
             const taskListContainer = document.createElement('div');
@@ -570,6 +596,20 @@ class TodoApp {
                     e.stopPropagation();
                     this.editTask(task.id);
                 };
+                
+                // 移除按钮（仅在任务有多个日期时显示）
+                const dueDates = task.dueDates || (task.dueDate ? [task.dueDate] : []);
+                if (dueDates.length > 1) {
+                    const removeBtn = document.createElement('div');
+                    removeBtn.className = 'calendar-task-remove';
+                    removeBtn.textContent = '×';
+                    removeBtn.title = '从此日期移除';
+                    removeBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.removeTaskFromDate(task.id, dateStr);
+                    };
+                    taskItem.appendChild(removeBtn);
+                }
                 
                 taskItem.appendChild(checkbox);
                 taskItem.appendChild(taskText);
@@ -633,15 +673,41 @@ class TodoApp {
         return `${month}月${day}日 ${weekday}`;
     }
     
-    // 分配任务到日期
+    // 分配任务到日期（支持多日期）
     assignTaskToDate(taskId, dateStr) {
         const task = this.tasks.find(t => t.id === taskId);
         if (task) {
-            task.dueDate = dateStr;
+            // 兼容旧数据：如果有dueDate但没有dueDates，先迁移
+            if (!task.dueDates && task.dueDate) {
+                task.dueDates = [task.dueDate];
+                delete task.dueDate;
+            } else if (!task.dueDates) {
+                task.dueDates = [];
+            }
+            
+            // 如果日期不存在，则添加
+            if (!task.dueDates.includes(dateStr)) {
+                task.dueDates.push(dateStr);
+                task.dueDates.sort(); // 保持日期排序
+                this.saveTasks();
+                this.renderTasks();
+                this.renderCalendar();
+                this.showNotification(`任务已添加到 ${dateStr}`);
+            } else {
+                this.showNotification(`任务已在 ${dateStr}`);
+            }
+        }
+    }
+    
+    // 从日期中移除任务
+    removeTaskFromDate(taskId, dateStr) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task && task.dueDates) {
+            task.dueDates = task.dueDates.filter(d => d !== dateStr);
             this.saveTasks();
             this.renderTasks();
             this.renderCalendar();
-            this.showNotification(`任务已安排到 ${dateStr}`);
+            this.showNotification(`任务已从 ${dateStr} 移除`);
         }
     }
     
